@@ -9,7 +9,6 @@ df["bmi_group"] = df["user_bmi"].apply(
 )
 
 # Dados
-
 healthy_week = df[
     (df["bmi_group"] == "Peso Adequado") &
     (df["is_weekend"] == False)
@@ -33,7 +32,6 @@ over_weekend = df[
 data = [healthy_week, healthy_weekend, over_week, over_weekend]
 
 # Boxplot
-
 fig, ax = plt.subplots(figsize=(10,6))
 
 bp = ax.boxplot(
