@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Mapa RMSSD — Coimbra</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: #f4f3ef;
+    color: #1a1a1a;
+    min-height: 100vh;
+    padding: 24px;
+  }
+  h1 {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+    margin-bottom: 20px;
+    color: #111;
+  }
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .stat {
+    background: #fff;
+    border-radius: 10px;
+    padding: 14px 16px;
+    border: 1px solid #e0ddd6;
+    text-align: center;
+  }
+  .stat-label { font-size: 12px; color: #888; margin-bottom: 4px; }
+  .stat-val { font-size: 22px; font-weight: 600; color: #111; }
+  .controls {
+    background: #fff;
+    border-radius: 10px;
+    border: 1px solid #e0ddd6;
+    padding: 16px;
+    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .row { display: flex; align-items: center; gap: 12px; }
+  label { font-size: 13px; color: #555; white-space: nowrap; min-width: 100px; }
+  input[type="file"] { font-size: 13px; flex: 1; cursor: pointer; }
+  input[type="range"] {
+    flex: 1;
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 1.5px;
+    border-radius: 3px;
+    outline: none;
+    background: linear-gradient(to right, #e74c3c 0%, #e74c3c 50%, #27ae60 50%, #27ae60 100%);
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2px solid #555;
+    cursor: pointer;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #fff;
+    border: 2px solid #555;
+    cursor: pointer;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  }
+  .slider-wrap {
+    flex: 1;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .thumb-label {
+    position: absolute;
+    top: 22px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #444;
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 1px 5px;
+    pointer-events: none;
+    transform: translateX(-50%);
+    white-space: nowrap;
+  }
+  .thumb-label { display: none; }
+  .legend {
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    font-size: 13px;
+    color: #555;
+  }
+  .threshold-inline {
+    font-size: 13px;
+    color: #555;
+    margin-left: auto;
+    white-space: nowrap;
+  }
+  .threshold-inline strong {
+    font-size: 15px;
+    font-weight: 700;
+    color: #111;
+  }
+  .legend-item { display: flex; align-items: center; gap: 7px; }
+  .dot { width: 13px; height: 13px; border-radius: 50%; display: inline-block; }
+  .status { margin-left: auto; font-size: 12px; color: #aaa; }
+  #map {
+    width: 100%;
+    height: calc(100vh - 280px);
+    min-height: 400px;
+    border-radius: 12px;
+    border: 1px solid #d8d5ce;
+    overflow: hidden;
+  }
+  .hint {
+    margin-top: 12px;
+    font-size: 12px;
+    color: #aaa;
+    text-align: center;
+  }
+  .hint strong { color: #888; }
+</style>
+</head>
+<body>
+
+<h1>Mapa RMSSD — Coimbra</h1>
+
+<div class="stats">
+  <div class="stat"><div class="stat-label">Pontos carregados</div><div class="stat-val" id="count-total">—</div></div>
+  <div class="stat"><div class="stat-label">Número de Pontos com RMSSD elevado (verde)</div><div class="stat-val" id="count-high" style="color:#2d6a4f">—</div></div>
+  <div class="stat"><div class="stat-label">Número de Pontos com RMSSD baixo (vermelho)</div><div class="stat-val" id="count-low" style="color:#c0392b">—</div></div>
+</div>
+
+<div class="controls">
+  <div class="row">
+    <label>Carregar Excel</label>
+    <input type="file" id="file-input" accept=".xlsx,.xls,.csv" />
+  </div>
+  <div class="row">
+    <label>Threshold RMSSD</label>
+    <div class="slider-wrap">
+      <input type="range" id="threshold-slider" min="0" max="100" value="50" step="0.01" disabled />
+      <div class="thumb-label" id="thumb-label">—</div>
+    </div>
+    <span class="slider-val" id="slider-val" style="display:none">—</span>
+  </div>
+  <div class="legend">
+    <div class="legend-item"><span class="dot" style="background:#e74c3c;border:2px solid #c0392b"></span> Baixo (abaixo do threshold)</div>
+    <div class="legend-item"><span class="dot" style="background:#27ae60;border:2px solid #1e8449"></span> Elevado (acima do threshold)</div>
+    <span class="threshold-inline">Threshold RMSSD: <strong id="threshold-display-val">—</strong></span>
+  </div>
+</div>
+
+<div id="map"></div>
+
+<div class="hint">
+  Colunas necessárias no Excel: <strong>latitude</strong> (ou lat) · <strong>longitude</strong> (ou lon / lng) · <strong>RMSSD</strong>
+</div>
+
+<script>
+  let map, markers = [], allData = [], currentThreshold = 50;
+
+  map = L.map('map').setView([40.2033, -8.4103], 13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  }).addTo(map);
+
+  function norm(k) { return k.trim().toLowerCase().replace(/[\s_\-]/g, ''); }
+
+  function findCol(row, candidates) {
+    for (const k of Object.keys(row)) {
+      if (candidates.includes(norm(k))) return k;
+    }
+    return null;
+  }
+
+  function renderMarkers(threshold) {
+    markers.forEach(m => map.removeLayer(m));
+    markers = [];
+    let low = 0, high = 0;
+    allData.forEach(row => {
+      const lat = parseFloat(row._lat);
+      const lng = parseFloat(row._lng);
+      const val = parseFloat(row._rmssd);
+      if (isNaN(lat) || isNaN(lng) || isNaN(val)) return;
+      const isHigh = val >= threshold;
+      isHigh ? high++ : low++;
+      const color = isHigh ? '#27ae60' : '#e74c3c';
+      const border = isHigh ? '#1e8449' : '#c0392b';
+      const m = L.circleMarker([lat, lng], {
+        radius: 9,
+        fillColor: color,
+        color: border,
+        weight: 2,
+        opacity: 1,
+        fillOpacity: 0.85
+      });
+      const extra = Object.keys(row).filter(k => !['_lat','_lng','_rmssd'].includes(k));
+      const extraHtml = extra.map(k => `<tr><td style="color:#999;padding:2px 10px 2px 0;font-size:12px">${k}</td><td style="font-size:12px"><b>${row[k]}</b></td></tr>`).join('');
+      m.bindPopup(`
+        <div style="font-size:13px;min-width:160px;font-family:system-ui">
+          <div style="font-weight:600;margin-bottom:8px;font-size:14px;color:${color}">
+            RMSSD: ${val.toFixed(3)}
+          </div>
+          <table style="border-collapse:collapse;width:100%">
+            <tr><td style="color:#999;padding:2px 10px 2px 0;font-size:12px">Latitude</td><td style="font-size:12px">${lat.toFixed(6)}</td></tr>
+            <tr><td style="color:#999;padding:2px 10px 2px 0;font-size:12px">Longitude</td><td style="font-size:12px">${lng.toFixed(6)}</td></tr>
+            ${extraHtml}
+          </table>
+        </div>
+      `);
+      m.addTo(map);
+      markers.push(m);
+    });
+    document.getElementById('count-total').textContent = allData.length;
+    document.getElementById('count-high').textContent = high;
+    document.getElementById('count-low').textContent = low;
+    document.getElementById('threshold-display-val').textContent = threshold.toFixed(3);
+  }
+
+  document.getElementById('file-input').addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const wb = XLSX.read(new Uint8Array(ev.target.result), { type: 'array' });
+        const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
+        if (!rows.length) { document.getElementById('status-msg').textContent = 'Ficheiro vazio.'; return; }
+
+        const s = rows[0];
+        const latKey   = findCol(s, ['latitude','lat']);
+        const lngKey   = findCol(s, ['longitude','lon','lng','long']);
+        const rmssdKey = findCol(s, ['rmssd']);
+
+        if (!latKey || !lngKey || !rmssdKey) {
+          document.getElementById('status-msg').textContent =
+            `Colunas não encontradas. Encontradas: ${Object.keys(s).join(', ')}`;
+          return;
+        }
+
+        allData = rows.map(r => {
+          const c = Object.assign({}, r);
+          c._lat = r[latKey];
+          c._lng = r[lngKey];
+          c._rmssd = r[rmssdKey];
+          return c;
+        }).filter(r => !isNaN(parseFloat(r._rmssd)));
+
+        const vals = allData.map(r => parseFloat(r._rmssd)).sort((a, b) => a - b);
+        const minV = vals[0], maxV = vals[vals.length - 1];
+        currentThreshold = vals[Math.floor(vals.length / 2)];
+
+        const sl = document.getElementById('threshold-slider');
+        sl.min = minV;
+        sl.max = maxV;
+        sl.step = ((maxV - minV) / 200).toFixed(6);
+        sl.value = currentThreshold;
+        sl.disabled = false;
+        document.getElementById('slider-val').textContent = currentThreshold.toFixed(3);
+        updateSliderGradient(sl);
+
+        const lats = allData.map(r => parseFloat(r._lat));
+        const lngs = allData.map(r => parseFloat(r._lng));
+        map.fitBounds([
+          [Math.min(...lats), Math.min(...lngs)],
+          [Math.max(...lats), Math.max(...lngs)]
+        ], { padding: [40, 40] });
+
+        renderMarkers(currentThreshold);
+      } catch (err) {
+        document.getElementById('status-msg').textContent = 'Erro ao ler ficheiro: ' + err.message;
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  });
+
+  function updateSliderGradient(slider) {
+    const min = parseFloat(slider.min) || 0;
+    const max = parseFloat(slider.max) || 100;
+    const val = parseFloat(slider.value);
+    const pct = ((val - min) / (max - min)) * 100;
+    slider.style.background = `linear-gradient(to right, #e74c3c 0%, #e74c3c ${pct}%, #27ae60 ${pct}%, #27ae60 100%)`;
+    const label = document.getElementById('thumb-label');
+    label.textContent = val.toFixed(3);
+    label.style.left = `calc(${pct}% + ${9 - pct * 0.18}px)`;
+  }
+
+  document.getElementById('threshold-slider').addEventListener('input', e => {
+    currentThreshold = parseFloat(e.target.value);
+    updateSliderGradient(e.target);
+    renderMarkers(currentThreshold);
+  });
+</script>
+</body>
+</html>
