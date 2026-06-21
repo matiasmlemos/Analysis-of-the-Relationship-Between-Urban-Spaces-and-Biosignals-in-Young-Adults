@@ -1,23 +1,14 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# =========================
-# 1. CARREGAR
-# =========================
 df = pd.read_excel("Geo_file_updated.xlsx")
 
-# =========================
-# 2. PREPARAR BMI
-# =========================
 df["bmi"] = pd.to_numeric(df["bim"], errors="coerce")
 
 df["bmi_group"] = df["bmi"].apply(
     lambda x: "Healthy" if x <= 24.9 else "Overweight_Obese"
 )
 
-# =========================
-# 3. DEFINIR PERFIS DE ESPAÇO
-# =========================
 space_profiles = {
     "Mobilidade Urbana": [
         "street_or_avenue",
@@ -57,17 +48,11 @@ space_profiles = {
     ]
 }
 
-# =========================
-# 4. TODAS AS COLUNAS
-# =========================
 all_space_cols = []
 
 for cols in space_profiles.values():
     all_space_cols.extend(cols)
 
-# =========================
-# 5. CONVERTER PARA 0/1
-# =========================
 for col in all_space_cols:
     df[col] = (
         df[col]
@@ -77,23 +62,13 @@ for col in all_space_cols:
         .astype(int)
     )
 
-# =========================
-# 6. Nº ESPAÇOS POR LINHA
-# =========================
 df["n_spaces"] = df[all_space_cols].sum(axis=1)
 
-# remover linhas sem espaços
 df = df[df["n_spaces"] > 0]
 
-# =========================
-# 7. NORMALIZAR
-# =========================
 for col in all_space_cols:
     df[col] = df[col] / df["n_spaces"]
 
-# =========================
-# 8. FUNÇÃO
-# =========================
 def compute_profiles(df_subset):
 
     results = {}
@@ -112,25 +87,18 @@ def compute_profiles(df_subset):
 
     return temp
 
-# =========================
-# 9. SEPARAR POR PERFIL IMC
-# =========================
 df_healthy = df[df["bmi_group"] == "Healthy"]
 df_over = df[df["bmi_group"] == "Overweight_Obese"]
 
 healthy_df = compute_profiles(df_healthy)
 over_df = compute_profiles(df_over)
 
-# =========================
-# 10. JUNTAR
-# =========================
 final_df = healthy_df[["Perfil", "Percentage"]].merge(
     over_df[["Perfil", "Percentage"]],
     on="Perfil",
     suffixes=("_Healthy", "_Overweight")
 )
 
-# ordenar
 final_df["Mean"] = (
     final_df["Percentage_Healthy"] +
     final_df["Percentage_Overweight"]
@@ -141,14 +109,13 @@ final_df = final_df.sort_values(
     ascending=False
 )
 
-# =========================
-# 11. GRÁFICO
-# =========================
+#Gráfico 
+
 x = range(len(final_df))
 
 plt.figure(figsize=(12,6))
 
-# Healthy = verde
+# Peso Adequado = verde
 bars1 = plt.bar(
     [i - 0.2 for i in x],
     final_df["Percentage_Healthy"],
@@ -158,7 +125,7 @@ bars1 = plt.bar(
     label="Peso Adequado"
 )
 
-# Overweight = vermelho
+# Excesso de Peso e Obesidade = vermelho
 bars2 = plt.bar(
     [i + 0.2 for i in x],
     final_df["Percentage_Overweight"],
@@ -187,10 +154,8 @@ plt.title(
     fontsize=14
 )
 
-# legenda
 plt.legend(fontsize=14)
 
-# valores em cima
 for bar in bars1:
     height = bar.get_height()
 
