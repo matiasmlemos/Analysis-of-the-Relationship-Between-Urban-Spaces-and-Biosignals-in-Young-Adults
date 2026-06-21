@@ -58,10 +58,8 @@ for col in all_space_cols:
         .astype(int)
     )
 
-# Contar número de espaços por linha
 df["n_spaces"] = df[all_space_cols].sum(axis=1)
 
-# Evitar divisão por zero
 df = df[df["n_spaces"] > 0]
 
 # Normalizar
@@ -74,7 +72,6 @@ profile_scores = {}
 for profile, cols in space_profiles.items():
     profile_scores[profile] = df[cols].sum().sum()
 
-# DataFrame final
 profile_df = pd.DataFrame({
     "Perfil": profile_scores.keys(),
     "Score": profile_scores.values()
