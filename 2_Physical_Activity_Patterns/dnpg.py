@@ -15,7 +15,6 @@ plt.boxplot(
     medianprops=dict(color="black", linewidth=2)
 )
 
-# Apenas aumento do tamanho das letras
 plt.ylabel("Número de Passos", fontsize=14)
 plt.title("Distribuição Geral do Número de Passos", fontsize=18)
 
