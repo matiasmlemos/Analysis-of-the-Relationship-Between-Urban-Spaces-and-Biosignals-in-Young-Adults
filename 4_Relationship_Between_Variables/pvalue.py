@@ -1,18 +1,14 @@
 import pandas as pd
 from scipy.stats import pearsonr
 
-# Ler o ficheiro usado para o heatmap
 df = pd.read_excel("features_heat_map.xlsx")
 
-# Selecionar apenas as variáveis do heatmap
 vars_heatmap = ["hr", "rmssd", "valence_value", "arousal_value", "stress_value", "mets", "steps"]
 
 df = df[vars_heatmap]
 
-# Garantir que são valores numéricos
 df = df.apply(pd.to_numeric, errors="coerce")
 
-# Pares com maior interesse, com base no heatmap
 pairs = [
     ("valence_value", "arousal_value"),
     ("valence_value", "stress_value"),
@@ -22,7 +18,6 @@ pairs = [
     ("hr", "rmssd")
 ]
 
-# Calcular correlação e p-value
 results = []
 
 for var1, var2 in pairs:
@@ -42,5 +37,4 @@ results_df = pd.DataFrame(results)
 
 print(results_df)
 
-# Guardar resultados em Excel
 results_df.to_excel("p_values_correlacoes.xlsx", index=False)
