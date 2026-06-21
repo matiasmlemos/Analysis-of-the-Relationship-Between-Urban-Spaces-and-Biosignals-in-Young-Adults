@@ -4,7 +4,6 @@ import numpy as np
 
 df = pd.read_excel("participants-file-com-bmi.xlsx")
 
-# Garantir que BMI é numérico
 df["bmi"] = pd.to_numeric(df["bmi"], errors="coerce")
 
 # Categorias de BMI
@@ -24,10 +23,8 @@ def bmi_category(bmi):
 
 df["bmi_category"] = df["bmi"].apply(bmi_category)
 
-# Garantir nomes consistentes no género
 df["gender"] = df["gender"].astype(str).str.strip().str.lower()
 
-# Contagem por categoria de BMI e género
 counts = df.groupby(["bmi_category", "gender"]).size().unstack(fill_value=0)
 
 order = [
@@ -46,7 +43,6 @@ width = 0.35
 
 plt.figure(figsize=(10,6))
 
-# Barras masculino e feminino
 plt.bar(
     x - width/2,
     counts.get("male", 0),
@@ -63,7 +59,6 @@ plt.bar(
     color="pink"
 )
 
-# AUMENTO DO TAMANHO DAS LETRAS
 plt.xlabel("Categoria de IMC", fontsize=14)
 plt.ylabel("Número de Indivíduos", fontsize=14)
 plt.title("Distribuição da Amostra por IMC e Género", fontsize=14)
