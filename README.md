@@ -3,8 +3,7 @@
 Bachelor's Project in Biomedical Engineering, Faculty of Siences and Technology of the University of Coimbra.
 
 ## Description
-This project investigates the relationship between urban spaces and physiological, behavioral and psychological variables in young adults using wearable data.
-
+This project investigates the relationship between urban environments, physical activity and physiological responses in young adults by integrating wearable biosignals, GPS mobility data, statistical analysis and geospatial visualisation.
 ## Repository Structure
 1. **Sample Characteristics**: Overview of the demographic and anthropometric characteristics of the study participants.
 2. **Physical Activity Patterns**: Analysis of participants’ physical activity levels and step counts throughout the monitoring period.
